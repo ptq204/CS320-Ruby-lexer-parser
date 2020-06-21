@@ -20,15 +20,19 @@ end
 '''
 
 code = '''
-if x < 5
+if (abc <= 3) and (mn == 4)
 	x = x - 2
-	y = y + 1
 elsif x > 4
 	z = x * 2
 else
 	y = y / 2
 end
 '''
+
+# code = '''
+# (x + 3) * ((y - 8) / 2)
+# '''
+
 pattern = r'while(.+\n)*end'
 if re.match(pattern, code.strip('\n')):
 	print('MATCH')

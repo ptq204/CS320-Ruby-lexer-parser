@@ -13,7 +13,7 @@ class Parser:
                 # ("expr", r".+"),
             ],
             "EXPR": [
-                ("and", r".+ and .+"),
+                ("and", r"(?!if).+ and .+"),
                 ("or", r".+ or .+"),
                 ("not", r"not .+"),
                 # ("arg", r".+")
@@ -66,11 +66,11 @@ class Parser:
     def deriveExpression(self, expr):
         if expr == '':
             return []
-        matchStmt = False
-        for rule in self.grammar["STMT"]:
+        matchExpr = False
+        for rule in self.grammar["EXPR"]:
             if re.match(rule[1], expr):
-                matchStmt = True
-        if not matchStmt:
+                matchExpr = True
+        if not matchExpr:
             return self.deriveArg(expr)
         keywords = self.lexer.getAllKeyWords(expr, self.lexer.exprKeywords)
         # for i in range(len(keywords)-1, -1, -1):
@@ -92,30 +92,20 @@ class Parser:
         for rule in self.grammar["PRIMARY"]:
             if re.match(rule[1], arg):
                 return self.derivePrimary(rule[0], arg)
-        keywords = self.lexer.getAllKeyWords(arg, self.lexer.argOperators)
-        if len(keywords) == 0:
-            # if arg not match any statement (if, while, until) -> derive arg as identifier, variable
-            return self.derivePrimary(None, arg)
-        res = []
-        kw = None
-        for i in range(len(keywords)):
-            kw = keywords[i]
-            parses = arg.split(" " + keywords[i][1] + " ")
-            leftArg = self.deriveArg(parses[0])
-            rightArg = self.deriveArg(parses[1])
-            if leftArg == None or rightArg == None:
-                continue
-            kw = keywords[i]
-            res.append(leftArg)
-            res.append(rightArg)
-            break
-        if len(res) == 0 or kw == None:
+        splitOp = self.getOperatorToSplit(arg)
+        # if arg not match any statement (if, while, until) or compare expression -> derive arg as identifier, variable
+        if splitOp == None:
+            return self.derivePrimary(None, arg.strip(')').strip('('))
+        parses = arg.split(splitOp[0])
+        leftArg = self.deriveArg(parses[0])
+        rightArg = self.deriveArg(parses[1])
+        if leftArg == None or rightArg == None:
             return None
-        return ["@op: " + kw[1], res]
+        res = [leftArg, rightArg]
+        return ["@op: " + splitOp[0], res]
 
 
     def derivePrimary(self, statement, primary):
-        # print(primary)
         if statement != None:
             if statement == "if":
                 return self.handleIfPrimary(primary)
@@ -123,8 +113,9 @@ class Parser:
                 return self.handleWhileUntilPrimary(statement, primary)
         if primary == '':
             return None
+        primary = primary.strip(' ').strip('(').strip(')')
         if self.lexer.checkValidIndentifier(primary):
-            return ["@ident:" + primary]
+            return ["@ident: " + primary]
         return self.deriveLiteral(primary)
         
     
@@ -132,17 +123,21 @@ class Parser:
         if lit == '':
             return None
         if self.lexer.checkValidInteger(lit):
-            return ["@num:" + lit]
+            return ["@int: " + lit]
+        if self.lexer.checkValidFloat(lit):
+            return ["@float: " + lit]
         if len(lit) == 1:
             return None
         if (lit[0] == '"' and lit[-1] == '"') or (lit[0] == '`' and lit[-1] == '`'):
             return ["@str:" + lit]
-        return 
+        return None
 
 
     def deriveSymbol(self, symb):
         if self.lexer.checkValidInteger(symb):
-            return ["@num: " + symb]
+            return ["@int: " + symb]
+        if self.lexer.checkValidFloat(symb):
+            return ["@float: " + symb]
         return ["@op: " + symb]
 
         
@@ -232,7 +227,7 @@ class Parser:
                 res = [":"+kw, parentExprRes, []]
                 k += 1
         return res
-        
+
         
     def priority(self, c):
         if c == '^':
@@ -264,7 +259,8 @@ class Parser:
             elif cur == ')':
                 while len(stk) > 0 and stk[-1][0] != '(':
                     res = stk.pop(-1)
-                stk.pop(-1)
+                if(len(stk) > 0):
+                    stk.pop(-1)
                 i += 1
             elif cur in self.lexer.argOperators:
                 idx = i + 1
@@ -278,8 +274,12 @@ class Parser:
             else:
                 i += 1
         while len(stk) > 0:
-            res = stk.pop(-1)
+            tmp = stk.pop(-1)
+            if (tmp[0] != '(' and tmp[0] != ')'):
+                res = tmp
+        # return (op, pos_of_op)
         print(res)
+        return res
                     
 
             
