@@ -38,3 +38,12 @@ def countHeadTabs(s):
 
 def isBelongToIdentifier(c):
     return c == '$' or c == '@' or (ord(c) >= ord('a') and ord(c) <= ord('z'))
+
+def print_list(lst, level=0):
+    # if level > 0:
+    #     print('  ' * level + '|')
+    for e in lst:
+        if isinstance(e, list):
+            print_list(e, level + 1)
+        else:
+            print('  ' * level + e)

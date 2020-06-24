@@ -52,10 +52,10 @@ class Parser:
         leftStmt = self.deriveStatement(parses[0])
         rightExpr = self.deriveStatement(parses[1])
         res = []
-        if leftStmt != None:
-            res.append(leftStmt)
         if rightExpr != None:
             res.append(rightExpr)
+        if leftStmt != None:
+            res.append(leftStmt)
         return [':'+kw[1], res]
 
 

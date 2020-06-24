@@ -29,13 +29,13 @@ else
 end
 '''
 
-# code = '''
-# (x + 3) * ((y - 8) / 2)
-# '''
+code = '''
+k = (x + 3) * ((y - 8) / 2)
+'''
 
 pattern = r'while(.+\n)*end'
 if re.match(pattern, code.strip('\n')):
 	print('MATCH')
 else:
 	print('NOT MATCH')
-print(par.parseCode(code.strip('\n')))
+print_list(par.parseCode(code.strip('\n')))
